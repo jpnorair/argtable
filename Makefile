@@ -8,10 +8,12 @@ PACKAGEDIR  ?= ./../_hbpkg/$(THISMACHINE)/argtable.$(VERSION)
 
 
 ifeq ($(THISSYSTEM),Darwin)
-	ARGTABLE_TARGET := libargtable.dylib
+# Mac can't do conditional selection of static and dynamic libs at link time.
+#	PRODUCTS := libargtable.dylib libargtable.a
+	PRODUCTS := libargtable.a
 	
 else ifeq ($(THISSYSTEM),Linux)
-	ARGTABLE_TARGET := libargtable.so
+	PRODUCTS := libargtable.so libargtable.a
 	
 else
 	error "THISSYSTEM set to unknown value: $(THISSYSTEM)"
@@ -38,13 +40,13 @@ OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJE
 
 
 all: lib
-lib: resources $(ARGTABLE_TARGET)
+lib: resources $(PRODUCTS)
 remake: cleaner all
 	
 
 install:
 	@mkdir -p $(PACKAGEDIR)
-	@cp -R $(TARGETDIR)/$(ARGTABLE_TARGET) $(PACKAGEDIR)/
+	@cp -R $(TARGETDIR)/* $(PACKAGEDIR)/
 	@cp -R ./*.h $(PACKAGEDIR)/
 	@rm -f $(PACKAGEDIR)/../argtable
 	@ln -s argtable.$(VERSION) ./$(PACKAGEDIR)/../argtable
@@ -64,7 +66,7 @@ clean:
 
 #Full Clean, Objects and Binaries
 cleaner: clean
-	@$(RM) -rf $(ARGTABLE_TARGET)
+	@$(RM) -rf $(PRODUCTS)
 	@$(RM) -rf $(TARGETDIR)
 
 #Pull in dependency info for *existing* .o files
@@ -76,6 +78,10 @@ libargtable.so: $(OBJECTS)
 
 libargtable.dylib: $(OBJECTS)
 	$(CC) -dynamiclib -o $(TARGETDIR)/$@ $(OBJECTS)
+	
+libargtable.a: $(OBJECTS)
+	ar -rcs $(TARGETDIR)/$@ $(OBJECTS)
+	ranlib $(TARGETDIR)/$@
 
 #Compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
