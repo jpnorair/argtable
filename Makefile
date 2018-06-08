@@ -3,7 +3,7 @@ CC=gcc
 THISMACHINE := $(shell uname -srm | sed -e 's/ /-/g')
 THISSYSTEM	:= $(shell uname -s)
 
-VERSION     ?= "3.0.0"
+VERSION     ?= 3.0.0
 PACKAGEDIR  ?= ./../_hbpkg/$(THISMACHINE)/argtable.$(VERSION)
 
 
@@ -11,18 +11,16 @@ ifeq ($(THISSYSTEM),Darwin)
 # Mac can't do conditional selection of static and dynamic libs at link time.
 #	PRODUCTS := libargtable.dylib libargtable.a
 	PRODUCTS := libargtable.a
-	
 else ifeq ($(THISSYSTEM),Linux)
 	PRODUCTS := libargtable.so libargtable.a
-	
 else
 	error "THISSYSTEM set to unknown value: $(THISSYSTEM)"
 endif
 
 SRCDIR      := .
 INCDIR      := .
-BUILDDIR    := build
-TARGETDIR   := bin
+BUILDDIR    := build/$(THISMACHINE)
+TARGETDIR   := bin/$(THISMACHINE)
 RESDIR      := 
 SRCEXT      := c
 DEPEXT      := d
@@ -74,11 +72,12 @@ cleaner: clean
 
 #Build the dynamic library
 libargtable.so: $(OBJECTS)
-	$(CC) -shared -o $@ $(OBJECTS)
+	$(CC) -shared -fPIC -Wl,-soname,libargtable.so.1 -o $(TARGETDIR)/$@.$(VERSION) $(OBJECTS) -lc
 
 libargtable.dylib: $(OBJECTS)
 	$(CC) -dynamiclib -o $(TARGETDIR)/$@ $(OBJECTS)
-	
+
+#Build static library -- same on all POSIX
 libargtable.a: $(OBJECTS)
 	ar -rcs $(TARGETDIR)/$@ $(OBJECTS)
 	ranlib $(TARGETDIR)/$@
