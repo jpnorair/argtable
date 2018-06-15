@@ -48,6 +48,7 @@ install:
 	@cp -R ./*.h $(PACKAGEDIR)/
 	@rm -f $(PACKAGEDIR)/../argtable
 	@ln -s argtable.$(VERSION) ./$(PACKAGEDIR)/../argtable
+	cd ../_hbsys && $(MAKE) sys_install INS_MACHINE=$(THISMACHINE) INS_PKGNAME=argtable
 
 
 #Copy Resources from Resources Directory to Target Directory
