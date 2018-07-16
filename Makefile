@@ -3,7 +3,7 @@ CC=gcc
 THISMACHINE := $(shell uname -srm | sed -e 's/ /-/g')
 THISSYSTEM	:= $(shell uname -s)
 
-VERSION     ?= 3.0.0
+VERSION     ?= 3.0.3
 PACKAGEDIR  ?= ./../_hbpkg/$(THISMACHINE)/argtable.$(VERSION)
 
 
