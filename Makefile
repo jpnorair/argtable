@@ -13,6 +13,8 @@ ifeq ($(THISSYSTEM),Darwin)
 	PRODUCTS := libargtable.a
 else ifeq ($(THISSYSTEM),Linux)
 	PRODUCTS := libargtable.so libargtable.a
+else ifeq ($(THISSYSTEM),CYGWIN_NT-10.0)
+	PRODUCTS := libargtable.a
 else
 	error "THISSYSTEM set to unknown value: $(THISSYSTEM)"
 endif

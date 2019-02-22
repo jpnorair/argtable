@@ -207,64 +207,64 @@ void dbg_printf(const char *fmt, ...)
  */
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
-// Darwin/BSD works better with system getopt.h than the version described below
-#include <getopt.h>
+    // Darwin/BSD works better with system getopt.h than the version described below
+#   include <getopt.h>
 
 // Linux and other systems have getopt defined right here
 #else
-#ifndef _GETOPT_H_
-#define _GETOPT_H_
+#   ifndef _GETOPT_H_
+#       define _GETOPT_H_
 
-#if 0
-#include <sys/cdefs.h>
-#endif
+#       if 0
+#           include <sys/cdefs.h>
+#       endif
 
 /*
  * GNU-like getopt_long() and 4.4BSD getsubopt()/optreset extensions
  */
-#define no_argument        0
-#define required_argument  1
-#define optional_argument  2
+#       define no_argument        0
+#       define required_argument  1
+#       define optional_argument  2
 
-struct option {
-	/* name of long option */
-	const char *name;
-	/*
-	 * one of no_argument, required_argument, and optional_argument:
-	 * whether option takes an argument
-	 */
-	int has_arg;
-	/* if not NULL, set *flag to val when option found */
-	int *flag;
-	/* if flag not NULL, value to set *flag to; else return value */
-	int val;
-};
+        struct option {
+            /* name of long option */
+            const char *name;
+            /*
+             * one of no_argument, required_argument, and optional_argument:
+             * whether option takes an argument
+             */
+            int has_arg;
+            /* if not NULL, set *flag to val when option found */
+            int *flag;
+            /* if flag not NULL, value to set *flag to; else return value */
+            int val;
+        };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#       ifdef __cplusplus
+            extern "C" {
+#       endif
 
-int	 getopt_long(int, char * const *, const char *,
-	    const struct option *, int *);
-int	 getopt_long_only(int, char * const *, const char *,
-	    const struct option *, int *);
-#ifndef _GETOPT_DEFINED
-#define _GETOPT_DEFINED
-int	 getopt(int, char * const *, const char *);
-int	 getsubopt(char **, char * const *, char **);
+        int	 getopt_long(int, char * const *, const char *,
+                const struct option *, int *);
+        int	 getopt_long_only(int, char * const *, const char *,
+                const struct option *, int *);
+#       ifndef _GETOPT_DEFINED
+#           define _GETOPT_DEFINED
+            int	 getopt(int, char * const *, const char *);
+            int	 getsubopt(char **, char * const *, char **);
 
-extern   char *optarg;                  /* getopt(3) external variables */
-extern   int opterr;
-extern   int optind;
-extern   int optopt;
-extern   int optreset;
-extern   char *suboptarg;               /* getsubopt(3) external variable */
-#endif /* _GETOPT_DEFINED */
+            extern   char *optarg;                  /* getopt(3) external variables */
+            extern   int opterr;
+            extern   int optind;
+            extern   int optopt;
+            extern   int optreset;
+            extern   char *suboptarg;               /* getsubopt(3) external variable */
+#       endif /* _GETOPT_DEFINED */
  
-#ifdef __cplusplus
-}
-#endif
-#endif /* !_GETOPT_H_ */
+#       ifdef __cplusplus
+        }
+#       endif
+#   endif /* !_GETOPT_H_ */
 
 #endif // Darwin/BSD condition
 
@@ -419,6 +419,28 @@ static void warnx(const char *fmt, ...)
 #else
 #include <err.h>
 #endif /*_WIN32*/
+
+
+typedef struct {
+    void* (*alloc)(size_t);
+    void (*free)(void*);
+} allocators_t;
+
+static allocators_t global = {
+    .alloc  = &malloc,
+    .free   = &free,
+};
+
+
+void arg_set_allocators(void* (*malloc_fn)(size_t), void (*free_fn)(void*)) {
+    if (malloc_fn != NULL) {
+        global.alloc = malloc_fn;
+    }
+    if (free_fn != NULL) {
+        global.free = free_fn;
+    }
+}
+
 
 
 /*
@@ -625,7 +647,7 @@ getopt_internal(int nargc, char * const *nargv, const char *options,
         err = _dupenv_s(&buffer, &buffer_size, "POSIXLY_CORRECT") == 0;
         posixly_correct = buffer != NULL;
         if(buffer != NULL && err == 0) {
-            free(buffer);
+            global.free(buffer);
         }
     }
 #else
@@ -1028,9 +1050,11 @@ struct arg_date * arg_daten(
 
     /* allocate storage for the arg_date struct + tmval[] array.    */
     /* we use calloc because we want the tmval[] array zero filled. */
-    result = (struct arg_date *)calloc(1, nbytes);
+    result = (struct arg_date *)global.alloc(nbytes);
     if (result)
     {
+        bzero(result, nbytes);
+        
         /* init the arg_hdr struct */
         result->hdr.flag      = ARG_HASVALUE;
         result->hdr.shortopts = shortopts;
@@ -1645,7 +1669,7 @@ struct arg_dbl * arg_dbln(
     nbytes = sizeof(struct arg_dbl)     /* storage for struct arg_dbl */
              + (maxcount + 1) * sizeof(double); /* storage for dval[maxcount] array plus one extra for padding to memory boundary */
 
-    result = (struct arg_dbl *)malloc(nbytes);
+    result = (struct arg_dbl *)global.alloc(nbytes);
     if (result)
     {
         size_t addr;
@@ -1772,7 +1796,7 @@ struct arg_end * arg_end(int maxcount)
              + maxcount * sizeof(void *)  /* storage for void* parent[maxcount] array */
              + maxcount * sizeof(char *); /* storage for char* argval[maxcount] array */
 
-    result = (struct arg_end *)malloc(nbytes);
+    result = (struct arg_end *)global.alloc(nbytes);
     if (result)
     {
         /* init the arg_hdr struct */
@@ -2031,7 +2055,7 @@ struct arg_file * arg_filen(
              + sizeof(char *) * maxcount  /* storage for basename[maxcount] array */
              + sizeof(char *) * maxcount; /* storage for extension[maxcount] array */
 
-    result = (struct arg_file *)malloc(nbytes);
+    result = (struct arg_file *)global.alloc(nbytes);
     if (result)
     {
         int i;
@@ -2406,7 +2430,7 @@ struct arg_int * arg_intn(
     nbytes = sizeof(struct arg_int)    /* storage for struct arg_int */
              + maxcount * sizeof(int); /* storage for ival[maxcount] array */
 
-    result = (struct arg_int *)malloc(nbytes);
+    result = (struct arg_int *)global.alloc(nbytes);
     if (result)
     {
         /* init the arg_hdr struct */
@@ -2555,7 +2579,7 @@ struct arg_lit * arg_litn(
     /* foolproof things by ensuring maxcount is not less than mincount */
     maxcount = (maxcount < mincount) ? mincount : maxcount;
 
-    result = (struct arg_lit *)malloc(sizeof(struct arg_lit));
+    result = (struct arg_lit *)global.alloc(sizeof(struct arg_lit));
     if (result)
     {
         /* init the arg_hdr struct */
@@ -2615,7 +2639,7 @@ struct arg_lit * arg_litn(
 
 struct arg_rem *arg_rem(const char *datatype, const char *glossary)
 {
-    struct arg_rem *result = (struct arg_rem *)malloc(sizeof(struct arg_rem));
+    struct arg_rem *result = (struct arg_rem *)global.alloc(sizeof(struct arg_rem));
     if (result)
     {
         result->hdr.flag = 0;
@@ -2925,7 +2949,7 @@ struct arg_rex * arg_rexn(const char * shortopts,
              + sizeof(struct privhdr)     /* storage for private arg_rex data */
              + maxcount * sizeof(char *);  /* storage for sval[maxcount] array */
 
-    result = (struct arg_rex *)malloc(nbytes);
+    result = (struct arg_rex *)global.alloc(nbytes);
     if (result == NULL)
         return result;
 
@@ -3529,17 +3553,17 @@ static const TRexChar *trex_matchnode(TRex* exp,TRexNode *node,const TRexChar *s
 /* public api */
 TRex *trex_compile(const TRexChar *pattern,const TRexChar **error,int flags)
 {
-	TRex *exp = (TRex *)malloc(sizeof(TRex));
+	TRex *exp = (TRex *)global.alloc(sizeof(TRex));
 	exp->_eol = exp->_bol = NULL;
 	exp->_p = pattern;
 	exp->_nallocated = (int)scstrlen(pattern) * sizeof(TRexChar);
-	exp->_nodes = (TRexNode *)malloc(exp->_nallocated * sizeof(TRexNode));
+	exp->_nodes = (TRexNode *)global.alloc(exp->_nallocated * sizeof(TRexNode));
 	exp->_nsize = 0;
 	exp->_matches = 0;
 	exp->_nsubexpr = 0;
 	exp->_first = trex_newnode(exp,OP_EXPR);
 	exp->_error = error;
-	exp->_jmpbuf = malloc(sizeof(jmp_buf));
+	exp->_jmpbuf = global.alloc(sizeof(jmp_buf));
 	exp->_flags = flags;
 	if(setjmp(*((jmp_buf*)exp->_jmpbuf)) == 0) {
 		int res = trex_list(exp);
@@ -3563,7 +3587,7 @@ TRex *trex_compile(const TRexChar *pattern,const TRexChar **error,int flags)
 			scprintf(_SC("\n"));
 		}
 #endif
-		exp->_matches = (TRexMatch *) malloc(exp->_nsubexpr * sizeof(TRexMatch));
+		exp->_matches = (TRexMatch *) global.alloc(exp->_nsubexpr * sizeof(TRexMatch));
 		memset(exp->_matches,0,exp->_nsubexpr * sizeof(TRexMatch));
 	}
 	else{
@@ -3576,10 +3600,10 @@ TRex *trex_compile(const TRexChar *pattern,const TRexChar **error,int flags)
 void trex_free(TRex *exp)
 {
 	if(exp)	{
-		if(exp->_nodes) free(exp->_nodes);
-		if(exp->_jmpbuf) free(exp->_jmpbuf);
-		if(exp->_matches) free(exp->_matches);
-		free(exp);
+		if(exp->_nodes) global.free(exp->_nodes);
+		if(exp->_jmpbuf) global.free(exp->_jmpbuf);
+		if(exp->_matches) global.free(exp->_matches);
+		global.free(exp);
 	}
 }
 
@@ -3786,7 +3810,7 @@ struct arg_str * arg_strn(
     nbytes = sizeof(struct arg_str)     /* storage for struct arg_str */
              + maxcount * sizeof(char *); /* storage for sval[maxcount] array */
 
-    result = (struct arg_str *)malloc(nbytes);
+    result = (struct arg_str *)global.alloc(nbytes);
     if (result)
     {
         int i;
@@ -3959,7 +3983,7 @@ struct longoptions * alloc_longoptions(struct arg_hdr * *table)
     nbytes = sizeof(struct longoptions)
              + sizeof(struct option) * noptions
              + longoptlen;
-    result = (struct longoptions *)malloc(nbytes);
+    result = (struct longoptions *)global.alloc(nbytes);
     if (result)
     {
         int option_index = 0;
@@ -4024,7 +4048,7 @@ char * alloc_shortoptions(struct arg_hdr * *table)
         len += 3 * (hdr->shortopts ? strlen(hdr->shortopts) : 0);
     }
 
-    result = malloc(len);
+    result = global.alloc(len);
     if (result)
     {
         char *res = result;
@@ -4087,8 +4111,8 @@ void arg_parse_tagged(int argc,
         /* one or both memory allocs failed */
         arg_register_error(endtable, endtable, ARG_EMALLOC, NULL);
         /* free anything that was allocated (this is null safe) */
-        free(shortoptions);
-        free(longoptions);
+        global.free(shortoptions);
+        global.free(longoptions);
         return;
     }
 
@@ -4188,8 +4212,8 @@ void arg_parse_tagged(int argc,
         }
     }
 
-    free(shortoptions);
-    free(longoptions);
+    global.free(shortoptions);
+    global.free(longoptions);
 }
 
 
@@ -4330,7 +4354,7 @@ int arg_parse(int argc, char * *argv, void * *argtable)
 
     /* Special case of argc==0.  This can occur on Texas Instruments DSP. */
     /* Failure to trap this case results in an unwanted NULL result from  */
-    /* the malloc for argvcopy (next code block).                         */
+    /* the global.alloc for argvcopy (next code block).                         */
     if (argc == 0)
     {
         /* We must still perform post-parse checks despite the absence of command line arguments */
@@ -4340,7 +4364,7 @@ int arg_parse(int argc, char * *argv, void * *argtable)
         return endtable->count;
     }
 
-    argvcopy = (char **)malloc(sizeof(char *) * (argc + 1));
+    argvcopy = (char **)global.alloc(sizeof(char *) * (argc + 1));
     if (argvcopy)
     {
         int i;
@@ -4366,7 +4390,7 @@ int arg_parse(int argc, char * *argv, void * *argtable)
             arg_parse_check(table, endtable);
 
         /* release the local copt of argv[] */
-        free(argvcopy);
+        global.free(argvcopy);
     }
     else
     {
@@ -5004,7 +5028,7 @@ void arg_free(void * *argtable)
             break;
 
         flag = table[tabindex]->flag;
-        free(table[tabindex]);
+        global.free(table[tabindex]);
         table[tabindex++] = NULL;
 
     } while(!(flag & ARG_TERMINATOR));
@@ -5021,7 +5045,7 @@ void arg_freetable(void * *argtable, size_t n)
         if (table[tabindex] == NULL)
             continue;
 
-        free(table[tabindex]);
+        global.free(table[tabindex]);
         table[tabindex] = NULL;
     };
 }

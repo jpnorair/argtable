@@ -285,6 +285,8 @@ struct arg_date* arg_daten(const char* shortopts,
 struct arg_end* arg_end(int maxerrors);
 
 
+void arg_set_allocators(void* (*malloc_fn)(size_t), void (*free_fn)(void*));
+
 /**** other functions *******************************************/
 int arg_nullcheck(void **argtable);
 int arg_parse(int argc, char **argv, void **argtable);
