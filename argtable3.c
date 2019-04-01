@@ -433,12 +433,8 @@ static allocators_t global = {
 
 
 void arg_set_allocators(void* (*malloc_fn)(size_t), void (*free_fn)(void*)) {
-    if (malloc_fn != NULL) {
-        global.alloc = malloc_fn;
-    }
-    if (free_fn != NULL) {
-        global.free = free_fn;
-    }
+    global.alloc    = (malloc_fn != NULL) ? malloc_fn : &malloc;
+    global.free     = (free_fn != NULL) ? free_fn : &free;
 }
 
 
