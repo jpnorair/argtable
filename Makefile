@@ -1,7 +1,8 @@
-CC=gcc
+CC := gcc
+LD := ld
 
-THISMACHINE := $(shell uname -srm | sed -e 's/ /-/g')
-THISSYSTEM	:= $(shell uname -s)
+THISMACHINE ?= $(shell uname -srm | sed -e 's/ /-/g')
+THISSYSTEM	?= $(shell uname -s)
 
 VERSION     ?= 3.0.3
 PACKAGEDIR  ?= ./../_hbpkg/$(THISMACHINE)/argtable.$(VERSION)
@@ -28,8 +29,7 @@ SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-#CFLAGS      := -std=gnu99 -O -g -Wall
-CFLAGS      := -std=gnu99 -fPIC -O3
+CFLAGS      ?= -std=gnu99 -fPIC -O3
 LIB         := 
 INC         := -I$(INCDIR)
 INCDEP      := -I$(INCDIR)
