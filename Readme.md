@@ -9,7 +9,6 @@ You can read all about [argtable3](https://www.argtable.org), which is the basis
 * [bintex](https://github.com/jpnorair/bintex)
 * [cJSON](https://github.com/jpnorair/cJSON)
 * [cmdtab](https://github.com/jpnorair/cmdtab)
-* [m2def](https://github.com/jpnorair/m2def)
 * [OTEAX](https://github.com/jpnorair/OTEAX)
 * [otter](https://github.com/jpnorair/otter)
 * Multiple proprietary software from Haystack Technologies
